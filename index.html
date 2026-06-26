@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>私有云端音效库</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand">
+        <div>
+          <h1>私有云端音效库</h1>
+          <small>Supabase 同步存储</small>
+        </div>
+        <span id="cloudStatus" class="status-dot">未连接</span>
+      </div>
+
+      <section id="authPanel" class="section auth-panel">
+        <h2>邮箱登录</h2>
+        <div class="field">
+          <label for="emailInput">邮箱</label>
+          <input id="emailInput" type="email" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <div class="field password-login" hidden>
+          <label for="passwordInput">密码</label>
+          <input id="passwordInput" type="password" placeholder="至少 6 位" autocomplete="current-password">
+        </div>
+        <label class="check">
+          <input id="rememberLogin" type="checkbox" checked>
+          <span>在这台电脑保持登录</span>
+        </label>
+        <div class="row">
+          <button id="signInBtn" class="primary wide-btn" type="button">发送登录邮件</button>
+          <button id="signUpBtn" type="button" hidden>注册</button>
+        </div>
+        <div class="login-link-area">
+          <button id="magicLinkBtn" class="wide-btn ghost" type="button">重新发送登录邮件</button>
+        </div>
+        <p class="hint">输入邮箱后会收到登录邮件，打开邮件里的链接即可进入音效库。登录后默认会在这台电脑保持登录。</p>
+      </section>
+
+      <section id="importPanel" class="section" hidden>
+        <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="上传音频或旧库 JSON">
+          <strong>拖入音频或旧库 JSON</strong>
+          <span>上传到云端后，任意电脑登录都能看到</span>
+          <div class="field">
+            <label for="importCategory">默认分类</label>
+            <input id="importCategory" list="categorySuggestions" value="按钮音效" placeholder="例如 按钮音效、音乐">
+          </div>
+          <div class="field">
+            <label for="importProject">项目/来源</label>
+            <input id="importProject" list="projectSuggestions" value="网页收集" placeholder="例如 A项目、网页收集">
+          </div>
+          <label class="check">
+            <input id="autoMusic" type="checkbox" checked>
+            <span>超过 30 秒自动归类为音乐</span>
+          </label>
+          <label class="check">
+            <input id="smartCategory" type="checkbox" checked>
+            <span>按文件名自动归入大分类</span>
+          </label>
+          <div class="row">
+            <button id="pickFiles" class="primary" type="button">选择文件</button>
+            <button id="pickFolder" type="button">选择文件夹</button>
+          </div>
+          <input id="fileInput" class="hidden-input" type="file" accept="audio/*,.wav,.mp3,.ogg,.flac,.m4a,.aac,application/json,.json" multiple>
+          <input id="folderInput" class="hidden-input" type="file" accept="audio/*,.wav,.mp3,.ogg,.flac,.m4a,.aac" webkitdirectory multiple>
+        </div>
+      </section>
+
+      <section id="filtersPanel" class="section" hidden>
+        <h2>筛选</h2>
+        <div class="filters">
+          <div class="field">
+            <label for="categoryFilter">分类</label>
+            <select id="categoryFilter"></select>
+          </div>
+          <div class="field">
+            <label for="projectFilter">项目/来源</label>
+            <select id="projectFilter"></select>
+          </div>
+          <div class="field">
+            <label for="favFilter">收藏</label>
+            <select id="favFilter">
+              <option value="all">全部</option>
+              <option value="fav">只看收藏</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>常用标签</label>
+            <div id="tagChips" class="chips"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="accountPanel" class="section" hidden>
+        <h2>设置</h2>
+        <p id="accountEmail" class="hint"></p>
+        <div class="field">
+          <label for="deviceNameInput">当前设备名</label>
+          <input id="deviceNameInput" placeholder="例如 工作电脑、家里电脑">
+        </div>
+        <div class="row">
+          <button id="saveDeviceNameBtn" type="button">保存设备名</button>
+          <button id="refreshDevicesBtn" type="button" class="ghost">刷新设备</button>
+        </div>
+        <div id="deviceList" class="device-list"></div>
+        <p class="hint">点“下线”后，那台电脑下次打开或自动检查时会退出音效库。</p>
+        <button id="signOutBtn" type="button" class="ghost wide-btn">退出当前电脑</button>
+      </section>
+    </aside>
+
+    <main>
+      <div class="library-head">
+        <div>
+          <h2>音效库</h2>
+          <div class="hint">登录后云端同步：分类、项目、波形、播放都保留。</div>
+        </div>
+        <div class="stats">
+          <span id="countStat" class="stat">0 个音频</span>
+          <span id="sizeStat" class="stat">0 MB</span>
+        </div>
+      </div>
+
+      <div id="modebar" class="modebar" aria-label="音频类型筛选">
+        <button class="active" type="button" data-kind="all">全部</button>
+        <button type="button" data-kind="sfx">音效</button>
+        <button type="button" data-kind="music">音乐</button>
+      </div>
+
+      <div class="topbar">
+        <input id="searchInput" type="search" placeholder="搜索名称、标签、备注">
+        <select id="sortSelect" title="排序">
+          <option value="newest">最新上传</option>
+          <option value="name">名称 A-Z</option>
+          <option value="category">分类</option>
+          <option value="project">项目/来源</option>
+          <option value="duration">时长</option>
+        </select>
+        <button id="autoClassifyBtn" type="button" class="primary">一键分类</button>
+        <button id="clearFilters" type="button" class="ghost">清除筛选</button>
+        <button id="refreshBtn" type="button" class="ghost">刷新</button>
+      </div>
+
+      <div id="list" class="list"></div>
+    </main>
+  </div>
+
+  <dialog id="editDialog">
+    <form id="editForm" method="dialog" class="dialog-body">
+      <div class="dialog-head">
+        <h2>编辑音频</h2>
+        <button id="closeDialog" class="icon ghost" type="button" title="关闭">×</button>
+      </div>
+      <input id="editId" type="hidden">
+      <div class="field">
+        <label for="editName">名称</label>
+        <input id="editName" required>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label for="editCategory">分类</label>
+          <input id="editCategory" list="categorySuggestions">
+          <datalist id="categorySuggestions"></datalist>
+        </div>
+        <div class="field">
+          <label for="editProject">项目/来源</label>
+          <input id="editProject" list="projectSuggestions">
+          <datalist id="projectSuggestions"></datalist>
+        </div>
+      </div>
+      <div class="field">
+        <label for="editTags">标签</label>
+        <input id="editTags" placeholder="用逗号分隔">
+      </div>
+      <div class="field">
+        <label for="editNotes">备注</label>
+        <textarea id="editNotes"></textarea>
+      </div>
+      <div class="row">
+        <button class="primary" type="submit">保存</button>
+        <button id="cancelEdit" type="button" class="ghost">取消</button>
+      </div>
+    </form>
+  </dialog>
+
+  <audio id="player" crossorigin="anonymous"></audio>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./config.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
