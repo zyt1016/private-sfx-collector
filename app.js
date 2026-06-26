@@ -53,9 +53,7 @@ const el = {
   accountPanel: document.getElementById("accountPanel"),
   accountEmail: document.getElementById("accountEmail"),
   emailInput: document.getElementById("emailInput"),
-  passwordInput: document.getElementById("passwordInput"),
   signInBtn: document.getElementById("signInBtn"),
-  signUpBtn: document.getElementById("signUpBtn"),
   magicLinkBtn: document.getElementById("magicLinkBtn"),
   rememberLogin: document.getElementById("rememberLogin"),
   signOutBtn: document.getElementById("signOutBtn"),
@@ -153,7 +151,6 @@ async function init() {
 
 function bindEvents() {
   el.signInBtn.addEventListener("click", sendMagicLink);
-  el.signUpBtn.addEventListener("click", signUp);
   el.magicLinkBtn.addEventListener("click", sendMagicLink);
   el.rememberLogin.addEventListener("change", () => {
     localStorage.setItem(REMEMBER_LOGIN_KEY, el.rememberLogin.checked ? "true" : "false");
@@ -249,22 +246,6 @@ function bindEvents() {
   });
 }
 
-async function signIn() {
-  const email = el.emailInput.value.trim();
-  const password = el.passwordInput.value;
-  await applyRememberPreference();
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) showAuthError(error);
-}
-
-async function signUp() {
-  const email = el.emailInput.value.trim();
-  const password = el.passwordInput.value;
-  const { error } = await sb.auth.signUp({ email, password });
-  if (error) showAuthError(error);
-  else showToast("注册完成。这是音效库账号；如果提示邮箱未确认，请先打开邮箱里的确认链接。");
-}
-
 async function sendMagicLink() {
   const email = el.emailInput.value.trim();
   if (!email) {
@@ -309,7 +290,7 @@ function showAuthError(error) {
     return;
   }
   if (/invalid login credentials/i.test(message)) {
-    showToast("邮箱或密码不对。注意这里登录的是音效库账号，不是 Supabase 后台账号。");
+    showToast("邮箱登录没有成功，请确认输入的是允许登录的邮箱。");
     return;
   }
   if (/rate limit|too many|security purposes/i.test(message)) {
